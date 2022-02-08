@@ -1,48 +1,62 @@
 import pandas as pd
 import numpy as np
+import json
 
-# read Equity Dividends sheet of taxpnl export file after
-# skipping starting 14 rows
-
-reqCols = ['Symbol', 'Date', 'Quantity', 'Net Dividend Amount']
-df = pd.read_excel('taxpnl-BR1239.xlsx',
-                   sheet_name='Equity Dividends', skiprows=14, usecols=reqCols)
-
-df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+with open('split_quarter.json', 'r') as f:
+    data_ = json.load(f)
 
 
 # maps the dividend to corresponding Quarter based on date
-def findQuarter(date_):
-    Q1_StartDate = pd.to_datetime('2021-04-01')
-    Q1_EndDate = pd.to_datetime('2021-06-30')
+def findQuarter(divident_date):
+    Q1_StartDate = pd.to_datetime(data_["Q1"][0])
+    Q1_EndDate = pd.to_datetime(data_["Q1"][1])
 
-    Q2_StartDate = pd.to_datetime('2021-07-01')
-    Q2_EndDate = pd.to_datetime('2021-09-30')
+    Q2_StartDate = pd.to_datetime(data_["Q2"][0])
+    Q2_EndDate = pd.to_datetime(data_["Q2"][1])
 
-    Q3_StartDate = pd.to_datetime('2021-10-01')
-    Q3_EndDate = pd.to_datetime('2021-12-31')
+    Q3_StartDate = pd.to_datetime(data_["Q3"][0])
+    Q3_EndDate = pd.to_datetime(data_["Q3"][1])
 
-    Q4_StartDate = pd.to_datetime('2022-01-01')
-    Q4_EndDate = pd.to_datetime('2022-03-31')
+    Q4_StartDate = pd.to_datetime(data_["Q4"][0])
+    Q4_EndDate = pd.to_datetime(data_["Q4"][1])
 
-    if (date_ >= Q1_StartDate) & (date_ <= Q1_EndDate):
+    if (divident_date >= Q1_StartDate) & (divident_date <= Q1_EndDate):
         return 'Q1'
-    if (date_ >= Q2_StartDate) & (date_ <= Q2_EndDate):
+    if (divident_date >= Q2_StartDate) & (divident_date <= Q2_EndDate):
         return 'Q2'
-    if (date_ >= Q3_StartDate) & (date_ <= Q3_EndDate):
+    if (divident_date >= Q3_StartDate) & (divident_date <= Q3_EndDate):
         return 'Q3'
-    elif (date_ >= Q4_StartDate) & (date_ <= Q4_EndDate):
+    elif (divident_date >= Q4_StartDate) & (divident_date <= Q4_EndDate):
         return 'Q4'
     return ''
 
+# find total dividend earned in each quarter
 
-df['Quarter'] = df['Date'].apply(findQuarter)
 
-#find total dividend earned in each quarter
-Q1_dividend = df.loc[df['Quarter'] == 'Q1', 'Net Dividend Amount'].sum()
-Q2_dividend = df.loc[df['Quarter'] == 'Q2', 'Net Dividend Amount'].sum()
-Q3_dividend = df.loc[df['Quarter'] == 'Q3', 'Net Dividend Amount'].sum()
-Q4_dividend = df.loc[df['Quarter'] == 'Q4', 'Net Dividend Amount'].sum()
+def dividendSum(df):
+    Q1_dividend = df.loc[df['Quarter'] == 'Q1', 'Net Dividend Amount'].sum()
+    Q2_dividend = df.loc[df['Quarter'] == 'Q2', 'Net Dividend Amount'].sum()
+    Q3_dividend = df.loc[df['Quarter'] == 'Q3', 'Net Dividend Amount'].sum()
+    Q4_dividend = df.loc[df['Quarter'] == 'Q4', 'Net Dividend Amount'].sum()
 
-print('Q1_dividend = ', Q1_dividend, '\nQ2_dividend = ', Q2_dividend, '\nQ3_dividend = ', Q3_dividend,
-      '\nQ4_dividend = ', Q4_dividend)
+    print('Q1_dividend = ', Q1_dividend, '\nQ2_dividend = ', Q2_dividend, '\nQ3_dividend = ', Q3_dividend,
+          '\nQ4_dividend = ', Q4_dividend)
+
+
+def main():
+    reqCols = ['Symbol', 'Date', 'Quantity', 'Net Dividend Amount']
+
+    # read Equity Dividends sheet of taxpnl export file after
+    # skipping starting 14 rows
+    df = pd.read_excel(data_["P&L_ExportName"],
+                       sheet_name='Equity Dividends', skiprows=14, usecols=reqCols)
+
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+
+    df['Quarter'] = df['Date'].apply(findQuarter)
+
+    dividendSum(df)
+
+
+if __name__ == '__main__':
+    main()
